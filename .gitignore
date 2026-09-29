@@ -1,0 +1,5 @@
+# 個人情報・鍵はGitHubに上げない
+.env
+profile.md
+__pycache__/
+*.pyc

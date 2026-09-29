@@ -1,0 +1,39 @@
+# 新着案件ウォッチャーの設定
+# キーワードや除外ワードは自由に追加・削除してOKです（保存してGitHubにpushすると次回から反映）
+
+# 案件のタイトル・本文にこれらのどれかが含まれていたら通知（大文字・小文字は区別しません）
+keywords:
+  - WordPress
+  - ワードプレス
+  - ホームページ制作
+  - HP制作
+  - LP制作
+  - コーディング
+  - Webデザイン
+  - Figma
+
+# タイトル・職種にこれらが含まれていたら通知しない（記事作成など、WordPressを使うだけの案件を弾く）
+exclude:
+  - ライター
+  - 記事作成
+  - 記事執筆
+  - データ入力
+  - 文字起こし
+  - 口コミ
+  - アンケート
+  - テレアポ
+  - 講師
+  - 広告運用
+
+sites:
+  crowdworks:
+    enabled: true
+  mamaworks:
+    enabled: true
+    # パラメータなしの一覧ページだけを見る（robots.txt で検索URLは禁止されているため）
+    pages:
+      - https://mamaworks.jp/jobs/creative
+      - https://mamaworks.jp/jobs/engineering
+
+# 提案文の下書きを作るか（false にするとメール通知のみ）
+draft: true
