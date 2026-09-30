@@ -1,5 +1,6 @@
 # 個人情報・鍵はGitHubに上げない
 .env
 profile.md
+proposal_template.txt
 __pycache__/
 *.pyc

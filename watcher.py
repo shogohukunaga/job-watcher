@@ -77,11 +77,34 @@ def collect(config: dict) -> tuple[dict[str, list[Job]], dict[str, str]]:
     return results, errors
 
 
+def load_template() -> str:
+    if text := os.environ.get("PROPOSAL_TEMPLATE", "").strip():
+        return text
+    for name in ("proposal_template.txt", "proposal_template.example.txt"):
+        if (ROOT / name).exists():
+            return (ROOT / name).read_text(encoding="utf-8").strip()
+    return ""
+
+
+def fill_template(template: str, job: Job) -> str:
+    return (
+        template.replace("{title}", job.title)
+        .replace("{site}", job.site_label)
+        .replace("{reward}", job.reward or "記載なし")
+    )
+
+
 def make_drafts(jobs: list[Job], config: dict) -> dict[str, str]:
     for job in jobs:
         load_description(job)
-    if not config.get("draft", True):
+    mode = config.get("draft", "template")
+    if mode == "template":
+        # 無料: テンプレートに案件名を差し込むだけ（【】の部分は自分で埋める）
+        template = load_template()
+        return {f"{j.site}:{j.id}": fill_template(template, j) for j in jobs} if template else {}
+    if mode != "ai":
         return {}
+    # 有料: Claude API で案件ごとに下書きを作る
     if not os.environ.get("ANTHROPIC_API_KEY"):
         print("ANTHROPIC_API_KEY が無いので下書きは作りません")
         return {}

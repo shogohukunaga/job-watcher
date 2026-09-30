@@ -33,6 +33,7 @@ jobs:
           MAIL_TO: ${{ secrets.MAIL_TO }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           PROFILE_TEXT: ${{ secrets.PROFILE_TEXT }}
+          PROPOSAL_TEMPLATE: ${{ secrets.PROPOSAL_TEMPLATE }}
           PYTHONIOENCODING: utf-8
         run: python watcher.py
 

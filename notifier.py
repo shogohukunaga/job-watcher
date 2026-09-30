@@ -35,6 +35,9 @@ def build_jobs_mail(jobs: list[Job], drafts: dict[str, str]) -> tuple[str, str]:
             lines.append(job.deadline)
         if job.category:
             lines.append(f"区分: {job.category[:80]}")
+        if desc := (job.description or job.summary).strip():
+            excerpt = desc if len(desc) <= 400 else desc[:400] + "…"
+            lines += ["", "--- 募集内容（抜粋） ---", excerpt]
         draft = drafts.get(f"{job.site}:{job.id}")
         if draft:
             lines += ["", "--- 提案文の下書き（内容を確認・修正してから送ってください） ---", draft]

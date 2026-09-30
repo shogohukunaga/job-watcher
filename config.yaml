@@ -35,5 +35,8 @@ sites:
       - https://mamaworks.jp/jobs/creative
       - https://mamaworks.jp/jobs/engineering
 
-# 提案文の下書きを作るか（false にするとメール通知のみ）
-draft: true
+# 提案文の下書きの作り方
+#   template : 無料。proposal_template のひな形に案件名を差し込む（【】は自分で埋める）
+#   ai       : 有料（1件数円）。Claude API で案件ごとに下書きを作る。Secret「ANTHROPIC_API_KEY」が必要
+#   off      : 下書きなし
+draft: template
