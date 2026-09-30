@@ -4,6 +4,10 @@ on:
   schedule:
     - cron: "*/10 * * * *" # 10分ごと（GitHubの混雑状況で数分〜十数分遅れることがあります）
   workflow_dispatch: # Actions 画面の「Run workflow」から手動実行もできる
+    inputs:
+      test:
+        description: "テストメールを送る件数（0なら通常のチェック）"
+        default: "0"
 
 permissions:
   contents: write # state/seen.json をコミットするため
@@ -35,7 +39,13 @@ jobs:
           PROFILE_TEXT: ${{ secrets.PROFILE_TEXT }}
           PROPOSAL_TEMPLATE: ${{ secrets.PROPOSAL_TEMPLATE }}
           PYTHONIOENCODING: utf-8
-        run: python watcher.py
+          TEST_COUNT: ${{ github.event.inputs.test || '0' }}
+        run: |
+          if [ "$TEST_COUNT" != "0" ]; then
+            python watcher.py --test "$TEST_COUNT"
+          else
+            python watcher.py
+          fi
 
       - name: 既読リストを保存
         run: |
