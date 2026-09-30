@@ -24,6 +24,7 @@ exclude:
   - テレアポ
   - 講師
   - 広告運用
+  - 営業パートナー
 
 sites:
   crowdworks:
