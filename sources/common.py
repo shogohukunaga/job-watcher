@@ -2,6 +2,7 @@ import html
 import json
 import re
 import time
+import unicodedata
 from dataclasses import dataclass, field
 
 import requests
@@ -77,8 +78,11 @@ def load_description(job: Job) -> None:
 
 
 def matches(job: Job, keywords: list[str], exclude: list[str]) -> bool:
-    head = f"{job.title}\n{job.category}".lower()
-    if any(w.lower() in head for w in exclude):
+    def normalize(text: str) -> str:
+        return unicodedata.normalize("NFKC", text).casefold()
+
+    head = normalize(f"{job.title}\n{job.category}")
+    if any(normalize(w) in head for w in exclude):
         return False
-    text = f"{job.title}\n{job.category}\n{job.summary}".lower()
-    return any(w.lower() in text for w in keywords)
+    text = normalize(f"{job.title}\n{job.category}\n{job.summary}")
+    return any(normalize(w) in text for w in keywords)

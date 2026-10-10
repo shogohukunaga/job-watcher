@@ -4,3 +4,5 @@ profile.md
 proposal_template.txt
 __pycache__/
 *.pyc
+state/*.tmp
+HANDOVER.md

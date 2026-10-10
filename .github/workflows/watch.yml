@@ -2,12 +2,16 @@ name: 新着案件チェック
 
 on:
   schedule:
-    - cron: "*/10 * * * *" # 10分ごと（GitHubの混雑状況で数分〜十数分遅れることがあります）
+    - cron: "*/10 * * * *" # 外部スケジューラーの動作確認までは維持。数時間遅れる場合があります。
   workflow_dispatch: # Actions 画面の「Run workflow」から手動実行もできる
     inputs:
       test:
         description: "テストメールを送る件数（0なら通常のチェック）"
         default: "0"
+      dry_run:
+        description: "取得だけ確認する（メール送信・既読保存なし）"
+        type: boolean
+        default: false
 
 permissions:
   contents: write # state/seen.json をコミットするため
@@ -18,10 +22,15 @@ concurrency:
 
 jobs:
   watch:
+    # cron-job.org の定期実行を確認してから変数を true にする。
+    if: github.ref == 'refs/heads/main' && (github.event_name != 'schedule' || vars.EXTERNAL_SCHEDULER_ENABLED != 'true')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: main # 順番待ちの間に更新された既読リストも取得する
+          fetch-depth: 0
 
       - uses: actions/setup-python@v5
         with:
@@ -40,14 +49,18 @@ jobs:
           PROPOSAL_TEMPLATE: ${{ secrets.PROPOSAL_TEMPLATE }}
           PYTHONIOENCODING: utf-8
           TEST_COUNT: ${{ github.event.inputs.test || '0' }}
+          DRY_RUN: ${{ inputs.dry_run || false }}
         run: |
-          if [ "$TEST_COUNT" != "0" ]; then
+          if [ "$DRY_RUN" = "true" ]; then
+            python watcher.py --dry-run
+          elif [ "$TEST_COUNT" != "0" ]; then
             python watcher.py --test "$TEST_COUNT"
           else
             python watcher.py
           fi
 
       - name: 既読リストを保存
+        if: ${{ success() && !inputs.dry_run && (github.event.inputs.test == '0' || github.event.inputs.test == '') }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -56,5 +69,15 @@ jobs:
             echo "変更なし"
           else
             git commit -m "既読リストを更新"
-            git push
+            # 実行中に設定変更が push されても、既読リストを保存する。
+            # 競合時には上書きせず失敗させる。
+            for attempt in 1 2 3; do
+              git pull --rebase origin main
+              if git push origin HEAD:main; then
+                exit 0
+              fi
+              sleep 2
+            done
+            echo "既読リストを保存できませんでした。次回、同じ案件が再通知される可能性があります。" >&2
+            exit 1
           fi

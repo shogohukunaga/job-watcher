@@ -11,6 +11,7 @@ import argparse
 import json
 import os
 import sys
+import tempfile
 import traceback
 from pathlib import Path
 
@@ -52,7 +53,18 @@ def load_state() -> dict:
 
 def save_state(state: dict) -> None:
     STATE_FILE.parent.mkdir(exist_ok=True)
-    STATE_FILE.write_text(json.dumps(state, ensure_ascii=False, indent=1) + "\n", encoding="utf-8")
+    # 書き込み途中で停止しても、元の既読リストを壊さない。
+    temp = None
+    try:
+        with tempfile.NamedTemporaryFile(
+            mode="w", encoding="utf-8", dir=STATE_FILE.parent, suffix=".tmp", delete=False
+        ) as f:
+            temp = Path(f.name)
+            f.write(json.dumps(state, ensure_ascii=False, indent=1) + "\n")
+        temp.replace(STATE_FILE)
+    finally:
+        if temp is not None:
+            temp.unlink(missing_ok=True)
 
 
 def collect(config: dict) -> tuple[dict[str, list[Job]], dict[str, str]]:
@@ -131,9 +143,12 @@ def mail(subject: str, body: str) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--dry-run", action="store_true", help="表示のみ（メール・下書き・保存なし）")
-    parser.add_argument("--test", type=int, metavar="N", help="最新の該当案件N件でテストメールを送る（保存なし）")
+    mode = parser.add_mutually_exclusive_group()
+    mode.add_argument("--dry-run", action="store_true", help="表示のみ（メール・下書き・保存なし）")
+    mode.add_argument("--test", type=int, metavar="N", help="最新の該当案件N件でテストメールを送る（保存なし）")
     args = parser.parse_args()
+    if args.test is not None and args.test < 1:
+        parser.error("--test は1以上の件数を指定してください")
 
     load_dotenv()
     config = yaml.safe_load((ROOT / "config.yaml").read_text(encoding="utf-8"))
@@ -146,7 +161,7 @@ def main() -> int:
             for j in jobs:
                 mark = "   " if j.id in seen else "NEW"
                 print(f"[{mark}] {name} {j.id} {j.title[:50]} | {j.reward}")
-        return 0
+        return 1 if errors else 0
 
     if args.test:
         jobs = [j for name in results for j in results[name]][: args.test]
